@@ -101,13 +101,21 @@ function rewriteSmbSection(oldUsername, config) {
     fs.writeFileSync(smbConfPath, newLines.join('\n'));
 }
 
+function requireAdmin(req, res, next) {
+    const token = req.headers['authorization'];
+    if (!token || !sessions[token] || sessions[token].role !== 'admin') {
+        return res.status(401).json({ error: 'No autorizado. Se requieren privilegios de administrador.' });
+    }
+    next();
+}
+
 // 1. Obtener Usuarios
-app.get('/api/users', async (req, res) => {
+app.get('/api/users', requireAdmin, async (req, res) => {
     res.json(await fetchRealUsers());
 });
 
 // 2. Crear Usuario
-app.post('/api/users', async (req, res) => {
+app.post('/api/users', requireAdmin, async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ error: 'Faltan datos.' });
 
@@ -139,7 +147,7 @@ app.post('/api/users', async (req, res) => {
 });
 
 // 3. EDITAR Detalles del Usuario (Nombre, Password, Permisos)
-app.put('/api/users/:username', async (req, res) => {
+app.put('/api/users/:username', requireAdmin, async (req, res) => {
     const { username } = req.params;
     const { newUsername, password, canRead, canWrite } = req.body;
     
@@ -185,7 +193,7 @@ app.put('/api/users/:username', async (req, res) => {
 });
 
 // 4. Cambiar Estado
-app.put('/api/users/:username/status', async (req, res) => {
+app.put('/api/users/:username/status', requireAdmin, async (req, res) => {
     const { username } = req.params;
     const { active } = req.body;
     try {
@@ -198,7 +206,7 @@ app.put('/api/users/:username/status', async (req, res) => {
 });
 
 // 5. Eliminar
-app.delete('/api/users/:username', async (req, res) => {
+app.delete('/api/users/:username', requireAdmin, async (req, res) => {
     const { username } = req.params;
     try {
         await runCmd(`sudo smbpasswd -x ${username}`).catch(()=>{});

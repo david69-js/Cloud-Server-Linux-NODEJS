@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupModal();
 });
 
+const __adminToken = localStorage.getItem('token');
+
 // ====== PESTAÑAS ======
 function setupTabs() {
     const tabBtns = document.querySelectorAll('.tab-btn');
@@ -61,7 +63,7 @@ document.getElementById('editUserForm').addEventListener('submit', async (e) => 
     try {
         const res = await fetch(`/api/users/${original}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Authorization': __adminToken },
             body: JSON.stringify({ newUsername, password, canRead, canWrite })
         });
         const data = await res.json();
@@ -89,7 +91,7 @@ async function fetchUsers() {
     usersList.innerHTML = '';
 
     try {
-        const response = await fetch('/api/users');
+        const response = await fetch('/api/users', { headers: { 'Authorization': __adminToken }});
         const users = await response.json();
         
         users.forEach(user => {
@@ -141,7 +143,7 @@ document.getElementById('createUserForm').addEventListener('submit', async (e) =
     try {
         const response = await fetch('/api/users', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Authorization': __adminToken },
             body: JSON.stringify({ username, password })
         });
         
@@ -164,7 +166,7 @@ async function toggleStatus(username, activeStatus) {
     try {
         await fetch(`/api/users/${username}/status`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Authorization': __adminToken },
             body: JSON.stringify({ active: activeStatus })
         });
         fetchUsers(); 
@@ -175,7 +177,7 @@ async function toggleStatus(username, activeStatus) {
 async function deleteUser(username) {
     if (!confirm(`¿Borrar a ${username} permanentemente de la red?`)) return;
     try {
-        await fetch(`/api/users/${username}`, { method: 'DELETE' });
+        await fetch(`/api/users/${username}`, { method: 'DELETE', headers: { 'Authorization': __adminToken } });
         showNotification(`Usuario eliminado`, "success");
         fetchUsers();
     } catch (error) {}
