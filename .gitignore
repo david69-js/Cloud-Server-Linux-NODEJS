@@ -1,0 +1,9 @@
+# Ignorar dependencias de Node.js en cualquier subcarpeta
+node_modules/
+
+# Ignorar variables de entorno
+.env
+
+# Ignorar archivos temporales
+.DS_Store
+*.log

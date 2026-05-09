@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Tablero - Samba Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="user-style.css">
+</head>
+<body>
+    <div class="glass-container" id="mainContainer" style="display: none;">
+        <h1 class="title">Hola, <span id="userNameDisplay">Usuario</span> 👋</h1>
+        <p class="subtitle">Este es el resumen de tu acceso</p>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span>Lectura</span>
+                <strong id="readStatus" style="color: var(--success);">Sí</strong>
+            </div>
+            <div class="stat-card">
+                <span>Escritura</span>
+                <strong id="writeStatus" style="color: var(--success);">Sí</strong>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>Conectar desde Windows (Explorador de Archivos):</label>
+            <div class="code-snippet" id="windowsLink">\\IP\usuario</div>
+            
+            <label>Conectar desde Mac (Finder -> Conectarse al servidor):</label>
+            <div class="code-snippet" id="macLink">smb://IP/usuario</div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid var(--border); margin: 32px 0;">
+
+        <h3 style="font-size: 1.1rem; margin-top: 0;">Cambiar Contraseña</h3>
+        <span id="passMsg" class="success-message"></span>
+        <span id="passError" class="error-message"></span>
+
+        <form id="changePassForm">
+            <div class="input-group">
+                <input type="password" id="newPassword" required placeholder="Ingresa tu nueva contraseña">
+            </div>
+            <button type="submit" class="btn" id="changePassBtn">
+                <span class="btn-text">Actualizar Contraseña</span>
+                <div class="loader"></div>
+            </button>
+        </form>
+
+        <button class="btn logout-btn" id="logoutBtn">Cerrar Sesión</button>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) window.location.href = 'login.html';
+
+        async function fetchMyData() {
+            try {
+                const res = await fetch('/api/me', {
+                    headers: { 'Authorization': token }
+                });
+                
+                if (res.status === 401) {
+                    localStorage.removeItem('token');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const data = await res.json();
+                
+                if (data.role === 'admin') {
+                    // Admin should be in the admin panel
+                    window.location.href = '/';
+                    return;
+                }
+
+                document.getElementById('userNameDisplay').textContent = data.username;
+                
+                document.getElementById('readStatus').textContent = data.canRead ? 'Permitida' : 'Bloqueada';
+                document.getElementById('readStatus').style.color = data.canRead ? 'var(--success)' : 'var(--danger)';
+                
+                document.getElementById('writeStatus').textContent = data.canWrite ? 'Permitida' : 'Bloqueada';
+                document.getElementById('writeStatus').style.color = data.canWrite ? 'var(--success)' : 'var(--danger)';
+                
+                // Set IPs. Ideally we fetch server IP dynamically, but we can use window.location.hostname
+                const host = window.location.hostname;
+                document.getElementById('windowsLink').textContent = `\\\\${host}\\${data.username}`;
+                document.getElementById('macLink').textContent = `smb://${host}/${data.username}`;
+                
+                document.getElementById('mainContainer').style.display = 'block';
+
+            } catch (err) {
+                console.error(err);
+                alert("Error cargando tus datos.");
+            }
+        }
+
+        document.getElementById('changePassForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('changePassBtn');
+            const passMsg = document.getElementById('passMsg');
+            const passError = document.getElementById('passError');
+            
+            btn.classList.add('loading');
+            passMsg.textContent = '';
+            passError.textContent = '';
+            
+            const newPassword = document.getElementById('newPassword').value;
+
+            try {
+                const res = await fetch('/api/me/change-password', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': token
+                    },
+                    body: JSON.stringify({ newPassword })
+                });
+
+                const out = await res.json();
+                
+                if (!res.ok) {
+                    passError.textContent = out.error || "Error al actualizar";
+                } else {
+                    passMsg.textContent = "Contraseña actualizada exitosamente!";
+                    document.getElementById('newPassword').value = '';
+                }
+            } catch (err) {
+                passError.textContent = "Error de conexión.";
+            }
+            
+            btn.classList.remove('loading');
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await fetch('/api/logout', { method: 'POST', headers: { 'Authorization': token }});
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            window.location.href = 'login.html';
+        });
+
+        fetchMyData();
+    </script>
+</body>
+</html>

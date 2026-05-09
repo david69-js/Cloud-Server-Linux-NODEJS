@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - Samba Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="user-style.css">
+</head>
+<body>
+    <div class="glass-container">
+        <h1 class="title">Bienvenido</h1>
+        <p class="subtitle">Accede a tu almacenamiento en red</p>
+
+        <span id="errorMsg" class="error-message"></span>
+
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="username">Usuario</label>
+                <input type="text" id="username" required autocomplete="username" placeholder="Tu nombre de usuario">
+            </div>
+            
+            <div class="input-group">
+                <label for="password">Contraseña</label>
+                <input type="password" id="password" required autocomplete="current-password" placeholder="Tu contraseña">
+            </div>
+
+            <button type="submit" class="btn" id="loginBtn">
+                <span class="btn-text">Iniciar Sesión</span>
+                <div class="loader"></div>
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // Si ya está logueado, redirigir
+        const token = localStorage.getItem('token');
+        const role = localStorage.getItem('role');
+        if (token) {
+            if (role === 'admin') window.location.href = '/'; 
+            else window.location.href = 'dashboard.html';
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('loginBtn');
+            const errorMsg = document.getElementById('errorMsg');
+            
+            btn.classList.add('loading');
+            errorMsg.textContent = '';
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    errorMsg.textContent = data.error || 'Autenticación fallida';
+                    btn.classList.remove('loading');
+                    return;
+                }
+
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('role', data.role);
+
+                if (data.role === 'admin') {
+                    window.location.href = '/'; // Panel de admin actual
+                } else {
+                    window.location.href = 'dashboard.html';
+                }
+            } catch (err) {
+                errorMsg.textContent = 'Error de conexión con el servidor.';
+                btn.classList.remove('loading');
+            }
+        });
+    </script>
+</body>
+</html>
