@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Samba Web Admin</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="panel large-panel">
+        <div class="header">
+            <h1>Samba Web Admin</h1>
+            <p>Control total sobre los accesos a la red</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="tab-list">Lista de Usuarios</button>
+            <button class="tab-btn" data-tab="tab-create">Nuevo Usuario</button>
+        </div>
+
+        <!-- TAB LIST -->
+        <div id="tab-list" class="tab-content active">
+            <div class="list-section">
+                <h3 class="section-title">Gestión de Accesos</h3>
+                <div class="table-container">
+                    <table id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th style="text-align:center;">Permisos</th>
+                                <th style="text-align:center;">Estado</th>
+                                <th style="text-align:right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersList"></tbody>
+                    </table>
+                    <div id="tableLoader" class="loader"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB CREATE -->
+        <div id="tab-create" class="tab-content">
+            <div class="form-section">
+                <h3 class="section-title">Añadir Nuevo Acceso</h3>
+                <form id="createUserForm">
+                    <div class="input-group">
+                        <label>Nombre de Usuario</label>
+                        <input type="text" id="username" pattern="[a-zA-Z0-9_-]+" title="Solo letras y números. Sin espacios." required autocomplete="off">
+                        <small class="disclaimer">Importante: Sin espacios ni símbolos especiales.</small>
+                    </div>
+                    <div class="input-group">
+                        <label>Contraseña</label>
+                        <input type="password" id="password" pattern="[a-zA-Z0-9]+" title="Solo letras y números." required>
+                        <small class="disclaimer">Solo letras y números (sin símbolos raros).</small>
+                    </div>
+                    <button type="submit" class="primary-btn">
+                        <span class="btn-text">Agregar Usuario</span>
+                        <div class="loader" id="loader"></div>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div id="notification" class="notification"></div>
+    </div>
+    
+    <!-- MODAL DETALLES DEL USUARIO -->
+    <div id="editModal" class="modal">
+        <div class="modal-content panel">
+            <span class="close-btn">&times;</span>
+            <h3 class="section-title">Detalles del Usuario</h3>
+            
+            <form id="editUserForm">
+                <input type="hidden" id="editOriginalUsername">
+                
+                <div class="input-group">
+                    <label>Nombre de Usuario</label>
+                    <input type="text" id="editUsername" pattern="[a-zA-Z0-9_-]+" title="Solo letras y números. Sin espacios." required>
+                    <small class="disclaimer">Sin espacios ni símbolos especiales.</small>
+                </div>
+                
+                <div class="input-group">
+                    <label>Nueva Contraseña (Opcional)</label>
+                    <input type="password" id="editPassword" pattern="[a-zA-Z0-9]+" title="Solo letras y números.">
+                    <small class="disclaimer warning">⚠️ Si modificas el nombre de usuario, <b>es obligatorio</b> asignar una contraseña (sin símbolos raros).</small>
+                </div>
+                
+                <!-- PERMISOS INDIVIDUALES -->
+                <div class="permissions-group">
+                    <label class="normal-checkbox">
+                        <input type="checkbox" id="editCanRead">
+                        Lectura (Puede ver y copiar archivos)
+                    </label>
+                    <label class="normal-checkbox mt-1">
+                        <input type="checkbox" id="editCanWrite">
+                        Escritura (Puede subir y modificar archivos)
+                    </label>
+                </div>
+                
+                <button type="submit" class="primary-btn mt-2">
+                    <span class="btn-text" id="editBtnText">Guardar Cambios</span>
+                    <div class="loader" id="editLoader"></div>
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
