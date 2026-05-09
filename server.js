@@ -321,18 +321,18 @@ app.get('/api/me/files', async (req, res) => {
         if (!fs.existsSync(targetDir)) return res.json([]);
         
         const files = fs.readdirSync(targetDir, { withFileTypes: true });
-        const list = files.map(dirent => {
+        let list = [];
+        for (let dirent of files) {
+            // Ignorar archivos fantasmas de macOS y carpetas ocultas innecesarias
+            if (dirent.name === '.DS_Store' || dirent.name.startsWith('._')) continue;
+            
             const isDir = dirent.isDirectory();
             let size = 0;
             if (!isDir) {
                 try { size = fs.statSync(path.join(targetDir, dirent.name)).size; } catch(e){}
             }
-            return {
-                name: dirent.name,
-                isDir,
-                size
-            };
-        });
+            list.push({ name: dirent.name, isDir, size });
+        }
         
         // Order: folders first, then files
         list.sort((a, b) => {
@@ -382,7 +382,7 @@ app.get('/api/me/files/download', (req, res) => {
     
     const targetPath = getSafePath(username, req.query.path);
     if (fs.existsSync(targetPath) && fs.statSync(targetPath).isFile()) {
-        res.download(targetPath);
+        res.download(targetPath, path.basename(targetPath), { dotfiles: 'allow' });
     } else {
         res.status(404).send('Archivo no encontrado');
     }
@@ -394,7 +394,7 @@ app.get('/api/me/files/view', (req, res) => {
     
     const targetPath = getSafePath(username, req.query.path);
     if (fs.existsSync(targetPath) && fs.statSync(targetPath).isFile()) {
-        res.sendFile(targetPath);
+        res.sendFile(targetPath, { dotfiles: 'allow' });
     } else {
         res.status(404).send('Archivo no encontrado');
     }
