@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
+const fileUpload = require('express-fileupload');
 const { exec } = require('child_process');
 const fs = require('fs');
 
@@ -11,6 +12,7 @@ const PORT = 80;
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(fileUpload());
 
 const sessions = {}; // Simple in-memory session store
 
@@ -282,6 +284,135 @@ app.post('/api/logout', (req, res) => {
         delete sessions[token];
     }
     res.json({ message: 'Sesión cerrada.' });
+});
+
+// ===========================
+// GESTOR DE ARCHIVOS WEB
+// ===========================
+
+function getAuthUser(req) {
+    const token = req.headers['authorization'] || req.query.token;
+    if (!token || !sessions[token] || sessions[token].role !== 'user') return null;
+    return sessions[token].username;
+}
+
+function getSafePath(username, dirPath) {
+    const base = `/srv/samba/${username}`;
+    if (!dirPath) return base;
+    const resolvedPath = path.resolve(base, dirPath.replace(/^\//, ''));
+    if (!resolvedPath.startsWith(base)) return base;
+    return resolvedPath;
+}
+
+app.get('/api/me/files', async (req, res) => {
+    const username = getAuthUser(req);
+    if (!username) return res.status(401).json({ error: 'No autorizado' });
+    
+    try {
+        const targetDir = getSafePath(username, req.query.path || '/');
+        if (!fs.existsSync(targetDir)) return res.json([]);
+        
+        const files = fs.readdirSync(targetDir, { withFileTypes: true });
+        const list = files.map(dirent => {
+            const isDir = dirent.isDirectory();
+            let size = 0;
+            if (!isDir) {
+                try { size = fs.statSync(path.join(targetDir, dirent.name)).size; } catch(e){}
+            }
+            return {
+                name: dirent.name,
+                isDir,
+                size
+            };
+        });
+        
+        // Order: folders first, then files
+        list.sort((a, b) => {
+            if (a.isDir === b.isDir) return a.name.localeCompare(b.name);
+            return a.isDir ? -1 : 1;
+        });
+        res.json(list);
+    } catch (err) {
+        res.status(500).json({ error: 'Error leyendo directorio' });
+    }
+});
+
+app.post('/api/me/files/upload', async (req, res) => {
+    const username = getAuthUser(req);
+    if (!username) return res.status(401).json({ error: 'No autorizado' });
+    
+    // Check write permissions
+    const users = await fetchRealUsers();
+    const myData = users.find(u => u.username === username);
+    if (!myData || !myData.canWrite) return res.status(403).json({ error: 'No tienes permisos de escritura' });
+    
+    if (!req.files || Object.keys(req.files).length === 0) {
+        return res.status(400).json({ error: 'Ningún archivo subido.' });
+    }
+    
+    const targetDir = getSafePath(username, req.body.path || '/');
+    const theFile = req.files.file;
+    const uploadPath = path.join(targetDir, theFile.name);
+    
+    try {
+        theFile.mv(uploadPath, async (err) => {
+            if (err) return res.status(500).json({ error: err.toString() });
+            
+            // Adjust permissions so Samba honors it properly and the user owns it
+            await runCmd(`sudo chown ${username}:${username} "${uploadPath}"`);
+            
+            res.json({ message: 'Subido correctamente' });
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Error del servidor' });
+    }
+});
+
+app.get('/api/me/files/download', (req, res) => {
+    const username = getAuthUser(req);
+    if (!username) return res.status(401).send('No autorizado');
+    
+    const targetPath = getSafePath(username, req.query.path);
+    if (fs.existsSync(targetPath) && fs.statSync(targetPath).isFile()) {
+        res.download(targetPath);
+    } else {
+        res.status(404).send('Archivo no encontrado');
+    }
+});
+
+app.delete('/api/me/files', async (req, res) => {
+    const username = getAuthUser(req);
+    if (!username) return res.status(401).json({ error: 'No autorizado' });
+    
+    const users = await fetchRealUsers();
+    const myData = users.find(u => u.username === username);
+    if (!myData || !myData.canWrite) return res.status(403).json({ error: 'No tienes permisos de borrado/escritura' });
+    
+    try {
+        const targetPath = getSafePath(username, req.body.path);
+        fs.rmSync(targetPath, { recursive: true, force: true });
+        res.json({ message: 'Eliminado correctamente' });
+    } catch (err) {
+        res.status(500).json({ error: 'Error al eliminar' });
+    }
+});
+
+app.post('/api/me/files/mkdir', async (req, res) => {
+    const username = getAuthUser(req);
+    if (!username) return res.status(401).json({ error: 'No autorizado' });
+    
+    const users = await fetchRealUsers();
+    const myData = users.find(u => u.username === username);
+    if (!myData || !myData.canWrite) return res.status(403).json({ error: 'No tienes permisos de creación' });
+    
+    try {
+        const targetPath = getSafePath(username, req.body.path);
+        fs.mkdirSync(targetPath, { recursive: true });
+        await runCmd(`sudo chown ${username}:${username} "${targetPath}"`);
+        res.json({ message: 'Carpeta creada' });
+    } catch (err) {
+        res.status(500).json({ error: 'Error al crear carpeta' });
+    }
 });
 
 app.listen(PORT, () => {

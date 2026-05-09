@@ -33,33 +33,59 @@
 
         <hr style="border: none; border-top: 1px solid var(--border); margin: 32px 0;">
 
-        <h3 style="font-size: 1.1rem; margin-top: 0;">Cambiar Contraseña</h3>
-        <span id="passMsg" class="success-message"></span>
-        <span id="passError" class="error-message"></span>
-
-        <form id="changePassForm">
-            <div class="input-group">
-                <input type="password" id="newPassword" required placeholder="Ingresa tu nueva contraseña">
+        <!-- FILE MANAGER SECTION -->
+        <h3 style="font-size: 1.25rem; margin-top: 0; margin-bottom: 8px;">Gestor de Archivos Web</h3>
+        <p class="subtitle" style="text-align: left; margin-bottom: 16px;">Sube, descarga o elimina tus archivos directamente desde aquí.</p>
+        
+        <div class="file-manager">
+            <div class="fm-header">
+                <div class="fm-path" id="fmPath">/</div>
+                <div class="fm-actions" id="fmActionsDiv" style="display:none;">
+                    <input type="file" id="fmUploadInput" style="display:none;">
+                    <button class="fm-btn" id="fmUploadBtn">Subir Archivo</button>
+                    <button class="fm-btn" id="fmFolderBtn">Nueva Carpeta</button>
+                </div>
             </div>
-            <button type="submit" class="btn" id="changePassBtn">
-                <span class="btn-text">Actualizar Contraseña</span>
-                <div class="loader"></div>
-            </button>
-        </form>
+            <ul class="file-list" id="fileList">
+                <div style="padding: 20px; text-align: center; color: var(--text-muted);">Cargando archivos...</div>
+            </ul>
+        </div>
 
-        <button class="btn logout-btn" id="logoutBtn">Cerrar Sesión</button>
+        <hr style="border: none; border-top: 1px solid var(--border); margin: 32px 0;">
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 32px;">
+            <div style="flex: 1;">
+                <h3 style="font-size: 1.1rem; margin-top: 0;">Cambiar Contraseña</h3>
+                <span id="passMsg" class="success-message" style="text-align: left;"></span>
+                <span id="passError" class="error-message" style="text-align: left;"></span>
+
+                <form id="changePassForm">
+                    <div class="input-group">
+                        <input type="password" id="newPassword" required placeholder="Ingresa tu nueva contraseña">
+                    </div>
+                    <button type="submit" class="btn" id="changePassBtn">
+                        <span class="btn-text">Actualizar Contraseña</span>
+                        <div class="loader"></div>
+                    </button>
+                </form>
+            </div>
+            
+            <div style="flex: 1; text-align: right;">
+                <button class="btn logout-btn" id="logoutBtn" style="width: auto; padding: 10px 24px;">Cerrar Sesión</button>
+            </div>
+        </div>
     </div>
 
     <script>
         const token = localStorage.getItem('token');
         if (!token) window.location.href = 'login.html';
 
+        let currentPath = '/';
+        let userCanWrite = false;
+
         async function fetchMyData() {
             try {
-                const res = await fetch('/api/me', {
-                    headers: { 'Authorization': token }
-                });
-                
+                const res = await fetch('/api/me', { headers: { 'Authorization': token }});
                 if (res.status === 401) {
                     localStorage.removeItem('token');
                     window.location.href = 'login.html';
@@ -67,33 +93,132 @@
                 }
 
                 const data = await res.json();
-                
                 if (data.role === 'admin') {
-                    // Admin should be in the admin panel
                     window.location.href = '/';
                     return;
                 }
 
+                userCanWrite = data.canWrite;
+
                 document.getElementById('userNameDisplay').textContent = data.username;
-                
                 document.getElementById('readStatus').textContent = data.canRead ? 'Permitida' : 'Bloqueada';
                 document.getElementById('readStatus').style.color = data.canRead ? 'var(--success)' : 'var(--danger)';
                 
                 document.getElementById('writeStatus').textContent = data.canWrite ? 'Permitida' : 'Bloqueada';
                 document.getElementById('writeStatus').style.color = data.canWrite ? 'var(--success)' : 'var(--danger)';
                 
-                // Set IPs. Ideally we fetch server IP dynamically, but we can use window.location.hostname
                 const host = window.location.hostname;
                 document.getElementById('windowsLink').textContent = `\\\\${host}\\${data.username}`;
                 document.getElementById('macLink').textContent = `smb://${host}/${data.username}`;
                 
+                if (userCanWrite) {
+                    document.getElementById('fmActionsDiv').style.display = 'flex';
+                }
+
                 document.getElementById('mainContainer').style.display = 'block';
+                loadFiles();
 
             } catch (err) {
                 console.error(err);
                 alert("Error cargando tus datos.");
             }
         }
+
+        // FILE MANAGER LOGIC
+        async function loadFiles() {
+            const fileListParams = new URLSearchParams({ path: currentPath });
+            const res = await fetch(`/api/me/files?${fileListParams.toString()}`, { headers: { 'Authorization': token }});
+            if (!res.ok) return;
+            const files = await res.json();
+            
+            document.getElementById('fmPath').innerHTML = `<span onclick="navPath('/')">🏠 Inicio</span> ` + 
+                (currentPath === '/' ? '' : currentPath);
+
+            const ul = document.getElementById('fileList');
+            ul.innerHTML = '';
+            
+            if (currentPath !== '/') {
+                const li = document.createElement('li');
+                li.className = 'file-item';
+                li.innerHTML = `<div class="file-name" onclick="navUp()"><svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg> .. (Atrás)</div>`;
+                ul.appendChild(li);
+            }
+
+            if (files.length === 0) {
+                ul.innerHTML += `<div style="padding: 20px; text-align: center; color: var(--text-muted);">Carpeta vacía</div>`;
+                return;
+            }
+
+            files.forEach(f => {
+                const p = currentPath.replace(/\/$/, '') + '/' + f.name;
+                const li = document.createElement('li');
+                li.className = 'file-item';
+
+                let icon = f.isDir 
+                    ? `<svg class="folder-icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>`
+                    : `<svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>`;
+
+                let actions = ``;
+                if (!f.isDir) {
+                    const downloadUrl = `/api/me/files/download?path=${encodeURIComponent(p)}&token=${token}`;
+                    actions += `<button class="fm-btn" onclick="window.location.href='${downloadUrl}'">Download</button>`;
+                }
+                if (userCanWrite) {
+                    actions += `<button class="fm-btn fm-btn-danger" onclick="deleteFile('${p}')">X</button>`;
+                }
+
+                li.innerHTML = `
+                    <div class="file-name" onclick="${f.isDir ? `navPath('${p}')` : ''}">${icon} ${f.name}</div>
+                    <div class="file-actions">${actions}</div>
+                `;
+                ul.appendChild(li);
+            });
+        }
+
+        window.navPath = (p) => { currentPath = p; loadFiles(); };
+        window.navUp = () => { currentPath = currentPath.split('/').slice(0, -1).join('/') || '/'; loadFiles(); };
+
+        document.getElementById('fmUploadBtn').onclick = () => document.getElementById('fmUploadInput').click();
+        
+        document.getElementById('fmUploadInput').onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('path', currentPath);
+
+            document.getElementById('fmUploadBtn').textContent = 'Subiendo...';
+            await fetch('/api/me/files/upload', {
+                method: 'POST',
+                headers: { 'Authorization': token },
+                body: formData
+            });
+            document.getElementById('fmUploadBtn').textContent = 'Subir Archivo';
+            e.target.value = ''; // reset
+            loadFiles();
+        };
+
+        document.getElementById('fmFolderBtn').onclick = async () => {
+            const name = prompt('Nombre de la carpeta:');
+            if (!name) return;
+            const p = currentPath.replace(/\/$/, '') + '/' + name;
+            await fetch('/api/me/files/mkdir', {
+                method: 'POST',
+                headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: p })
+            });
+            loadFiles();
+        };
+
+        window.deleteFile = async (p) => {
+            if (!confirm('¿Seguro que deseas eliminarlo?')) return;
+            await fetch('/api/me/files', {
+                method: 'DELETE',
+                headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: p })
+            });
+            loadFiles();
+        };
 
         document.getElementById('changePassForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -110,15 +235,11 @@
             try {
                 const res = await fetch('/api/me/change-password', {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': token
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': token },
                     body: JSON.stringify({ newPassword })
                 });
 
                 const out = await res.json();
-                
                 if (!res.ok) {
                     passError.textContent = out.error || "Error al actualizar";
                 } else {
@@ -128,7 +249,6 @@
             } catch (err) {
                 passError.textContent = "Error de conexión.";
             }
-            
             btn.classList.remove('loading');
         });
 
