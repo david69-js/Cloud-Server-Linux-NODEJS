@@ -47,8 +47,14 @@
                 </div>
             </div>
             <ul class="file-list" id="fileList">
-                <div style="padding: 20px; text-align: center; color: var(--text-muted);">Cargando archivos...</div>
+                <div style="padding: 20px; text-align: center; color: var(--text-muted); grid-column: 1 / -1;">Cargando archivos...</div>
             </ul>
+        </div>
+        
+        <!-- Preview Modal -->
+        <div id="previewModal" class="preview-modal">
+            <span class="preview-close" onclick="closePreview()">&times;</span>
+            <div id="previewContainer" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;"></div>
         </div>
 
         <hr style="border: none; border-top: 1px solid var(--border); margin: 32px 0;">
@@ -140,12 +146,13 @@
             if (currentPath !== '/') {
                 const li = document.createElement('li');
                 li.className = 'file-item';
-                li.innerHTML = `<div class="file-name" onclick="navUp()"><svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg> .. (Atrás)</div>`;
+                li.onclick = () => navUp();
+                li.innerHTML = `<div class="file-name"><svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg> <span style="font-size:0.8rem; opacity:0.8">(Atrás)</span></div>`;
                 ul.appendChild(li);
             }
 
             if (files.length === 0) {
-                ul.innerHTML += `<div style="padding: 20px; text-align: center; color: var(--text-muted);">Carpeta vacía</div>`;
+                ul.innerHTML += `<div style="padding: 20px; text-align: center; color: var(--text-muted); grid-column: 1 / -1;">Carpeta vacía</div>`;
                 return;
             }
 
@@ -153,6 +160,10 @@
                 const p = currentPath.replace(/\/$/, '') + '/' + f.name;
                 const li = document.createElement('li');
                 li.className = 'file-item';
+                
+                const isImage = f.name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                const isPdf = f.name.match(/\.(pdf)$/i);
+                const canPreview = isImage || isPdf;
 
                 let icon = f.isDir 
                     ? `<svg class="folder-icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>`
@@ -161,19 +172,43 @@
                 let actions = ``;
                 if (!f.isDir) {
                     const downloadUrl = `/api/me/files/download?path=${encodeURIComponent(p)}&token=${token}`;
-                    actions += `<button class="fm-btn" onclick="window.location.href='${downloadUrl}'">Download</button>`;
+                    actions += `<button class="fm-btn-icon" title="Descargar" onclick="event.stopPropagation(); window.location.href='${downloadUrl}'">
+                        <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                    </button>`;
                 }
                 if (userCanWrite) {
-                    actions += `<button class="fm-btn fm-btn-danger" onclick="deleteFile('${p}')">X</button>`;
+                    actions += `<button class="fm-btn-icon danger" title="Eliminar" onclick="event.stopPropagation(); deleteFile('${p}')">
+                        <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                    </button>`;
+                }
+
+                if (f.isDir) {
+                    li.onclick = () => navPath(p);
+                } else if (canPreview) {
+                    li.onclick = () => openPreview(p, isPdf ? 'pdf' : 'image');
                 }
 
                 li.innerHTML = `
-                    <div class="file-name" onclick="${f.isDir ? `navPath('${p}')` : ''}">${icon} ${f.name}</div>
+                    <div class="file-name">${icon} <span>${f.name}</span></div>
                     <div class="file-actions">${actions}</div>
                 `;
                 ul.appendChild(li);
             });
         }
+        
+        function openPreview(path, type) {
+            const url = `/api/me/files/view?path=${encodeURIComponent(path)}&token=${token}`;
+            const container = document.getElementById('previewContainer');
+            container.innerHTML = type === 'image' 
+                ? `<img src="${url}" class="preview-content">`
+                : `<iframe src="${url}" class="preview-content" style="width:80vw; height:80vh; background:white;"></iframe>`;
+            document.getElementById('previewModal').style.display = 'flex';
+        }
+        
+        window.closePreview = () => {
+            document.getElementById('previewModal').style.display = 'none';
+            document.getElementById('previewContainer').innerHTML = '';
+        };
 
         window.navPath = (p) => { currentPath = p; loadFiles(); };
         window.navUp = () => { currentPath = currentPath.split('/').slice(0, -1).join('/') || '/'; loadFiles(); };

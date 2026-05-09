@@ -388,6 +388,18 @@ app.get('/api/me/files/download', (req, res) => {
     }
 });
 
+app.get('/api/me/files/view', (req, res) => {
+    const username = getAuthUser(req);
+    if (!username) return res.status(401).send('No autorizado');
+    
+    const targetPath = getSafePath(username, req.query.path);
+    if (fs.existsSync(targetPath) && fs.statSync(targetPath).isFile()) {
+        res.sendFile(targetPath);
+    } else {
+        res.status(404).send('Archivo no encontrado');
+    }
+});
+
 app.delete('/api/me/files', async (req, res) => {
     const username = getAuthUser(req);
     if (!username) return res.status(401).json({ error: 'No autorizado' });

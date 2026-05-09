@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchUsers();
     setupTabs();
     setupModal();
+    setupLogout();
 });
 
 const __adminToken = localStorage.getItem('token');
@@ -22,6 +23,19 @@ function setupTabs() {
             if(btn.dataset.tab === 'tab-list') fetchUsers();
         });
     });
+}
+
+// ====== LOGOUT ======
+function setupLogout() {
+    const logoutBtn = document.getElementById('adminLogoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            await fetch('/api/logout', { method: 'POST', headers: { 'Authorization': __adminToken }});
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            window.location.href = 'login.html';
+        });
+    }
 }
 
 // ====== MODAL DETALLES ======
@@ -92,6 +106,13 @@ async function fetchUsers() {
 
     try {
         const response = await fetch('/api/users', { headers: { 'Authorization': __adminToken }});
+        if (response.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            window.location.href = 'login.html';
+            return;
+        }
+        
         const users = await response.json();
         
         users.forEach(user => {
@@ -146,6 +167,8 @@ document.getElementById('createUserForm').addEventListener('submit', async (e) =
             headers: { 'Content-Type': 'application/json', 'Authorization': __adminToken },
             body: JSON.stringify({ username, password })
         });
+        
+        if (response.status === 401) return window.location.href = 'login.html';
         
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
