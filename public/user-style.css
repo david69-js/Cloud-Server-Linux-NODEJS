@@ -1,12 +1,12 @@
 :root {
-    --bg-color: #0f172a;
-    --card-bg: rgba(30, 41, 59, 0.7);
-    --primary: #3b82f6;
-    --primary-hover: #2563eb;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --border: rgba(255, 255, 255, 0.1);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    --bg-color: #f8fafc;
+    --card-bg: #ffffff;
+    --primary: #10b981; /* Emerald/Green */
+    --primary-hover: #059669;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --glass-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --danger: #ef4444;
     --success: #10b981;
 }
@@ -16,9 +16,6 @@ body {
     padding: 0;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     background: var(--bg-color);
-    background-image: 
-        radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15), transparent 25%),
-        radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.15), transparent 25%);
     color: var(--text-main);
     min-height: 100vh;
     display: flex;
@@ -28,15 +25,13 @@ body {
 
 .glass-container {
     background: var(--card-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border);
-    border-radius: 24px;
+    border-radius: 12px;
     padding: 40px;
     width: 90%;
     max-width: 800px;
     box-shadow: var(--glass-shadow);
-    animation: fadeIn 0.8s ease-out forwards;
+    animation: fadeIn 0.4s ease-out forwards;
     margin: 40px auto;
 }
 
@@ -45,9 +40,7 @@ h1.title {
     font-size: 2rem;
     font-weight: 700;
     text-align: center;
-    background: linear-gradient(135deg, #60a5fa, #34d399);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: var(--primary);
     margin-bottom: 8px;
 }
 
@@ -73,19 +66,19 @@ p.subtitle {
 .input-group input {
     width: 100%;
     padding: 12px 16px;
-    background: rgba(15, 23, 42, 0.6);
+    background: #ffffff;
     border: 1px solid var(--border);
-    border-radius: 12px;
-    color: white;
+    border-radius: 8px;
+    color: var(--text-main);
     font-size: 1rem;
     outline: none;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     box-sizing: border-box;
 }
 
 .input-group input:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
 }
 
 .btn {
@@ -94,18 +87,15 @@ p.subtitle {
     background: var(--primary);
     color: white;
     border: none;
-    border-radius: 12px;
+    border-radius: 8px;
     font-size: 1.05rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+    transition: all 0.2s ease;
 }
 
 .btn:hover {
     background: var(--primary-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
 }
 
 .error-message {
@@ -134,9 +124,9 @@ p.subtitle {
 }
 
 .stat-card {
-    background: rgba(15, 23, 42, 0.5);
+    background: var(--bg-color);
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: 12px;
     padding: 16px;
     text-align: center;
 }
@@ -156,12 +146,12 @@ p.subtitle {
 }
 
 .code-snippet {
-    background: #000;
+    background: #f1f5f9;
     padding: 12px;
     border-radius: 8px;
     font-family: monospace;
     font-size: 0.9rem;
-    color: #34d399;
+    color: var(--primary);
     word-break: break-all;
     text-align: center;
     margin-bottom: 24px;
@@ -172,22 +162,19 @@ p.subtitle {
     background: transparent;
     border: 1px solid var(--border);
     margin-top: 16px;
-    box-shadow: none;
     color: var(--text-muted);
 }
 
 .logout-btn:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: white;
-    transform: none;
-    box-shadow: none;
+    background: #f1f5f9;
+    color: var(--text-main);
 }
 
 /* File Manager */
 .file-manager {
-    background: rgba(15, 23, 42, 0.4);
+    background: var(--bg-color);
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: 12px;
     overflow: hidden;
     margin-top: 24px;
 }
@@ -197,7 +184,7 @@ p.subtitle {
     justify-content: space-between;
     align-items: center;
     padding: 16px;
-    background: rgba(255, 255, 255, 0.03);
+    background: #ffffff;
     border-bottom: 1px solid var(--border);
 }
 
@@ -218,7 +205,7 @@ p.subtitle {
     color: white;
     border: none;
     padding: 8px 12px;
-    border-radius: 8px;
+    border-radius: 6px;
     font-size: 0.85rem;
     cursor: pointer;
     transition: 0.2s;
@@ -246,7 +233,8 @@ p.subtitle {
     justify-content: center;
     padding: 16px 8px;
     border-radius: 12px;
-    background: transparent;
+    background: #ffffff;
+    border: 1px solid var(--border);
     transition: all 0.2s ease;
     position: relative;
     cursor: pointer;
@@ -254,8 +242,9 @@ p.subtitle {
 }
 
 .file-item:hover { 
-    background: rgba(255, 255, 255, 0.1); 
+    border-color: var(--primary);
     transform: translateY(-2px);
+    box-shadow: var(--glass-shadow);
 }
 
 .file-name {
@@ -276,11 +265,10 @@ p.subtitle {
 .file-name svg {
     width: 48px;
     height: 48px;
-    fill: var(--text-muted);
-    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+    fill: var(--primary);
 }
 
-.folder-icon { fill: #60a5fa !important; }
+.folder-icon { fill: var(--text-muted) !important; }
 
 .file-actions {
     position: absolute;
@@ -294,18 +282,27 @@ p.subtitle {
 .file-item:hover .file-actions { opacity: 1; }
 
 .fm-btn-icon {
-    background: rgba(15, 23, 42, 0.8);
-    border: none;
+    background: #f1f5f9;
+    border: 1px solid var(--border);
     padding: 6px;
     border-radius: 50%;
     cursor: pointer;
-    color: white;
+    color: var(--text-muted);
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: 0.2s;
 }
-.fm-btn-icon:hover { background: var(--primary); }
-.fm-btn-icon.danger:hover { background: var(--danger); }
+.fm-btn-icon:hover { 
+    background: var(--primary); 
+    color: white; 
+    border-color: var(--primary);
+}
+.fm-btn-icon.danger:hover { 
+    background: var(--danger); 
+    color: white; 
+    border-color: var(--danger);
+}
 
 .fm-btn-icon svg {
     width: 14px;
@@ -319,8 +316,8 @@ p.subtitle {
     position: fixed;
     z-index: 1000;
     left: 0; top: 0; width: 100%; height: 100%;
-    background-color: rgba(0,0,0,0.85);
-    backdrop-filter: blur(5px);
+    background-color: rgba(0,0,0,0.6);
+    backdrop-filter: blur(2px);
     align-items: center;
     justify-content: center;
 }
@@ -328,7 +325,7 @@ p.subtitle {
     max-width: 90%;
     max-height: 90%;
     border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 .preview-close {
     position: absolute;
@@ -336,9 +333,8 @@ p.subtitle {
     color: white; font-size: 40px; font-weight: bold; cursor: pointer;
 }
 
-
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
+    from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
 

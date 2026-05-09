@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="glass-container" id="mainContainer" style="display: none;">
-        <h1 class="title">Hola, <span id="userNameDisplay">Usuario</span> 👋</h1>
+        <h1 class="title">Hola, <span id="userNameDisplay">Usuario</span></h1>
         <p class="subtitle">Este es el resumen de tu acceso</p>
 
         <div class="stats-grid">
@@ -137,7 +137,7 @@
             if (!res.ok) return;
             const files = await res.json();
             
-            document.getElementById('fmPath').innerHTML = `<span onclick="navPath('/')">🏠 Inicio</span> ` + 
+            document.getElementById('fmPath').innerHTML = `<span onclick="navPath('/')"> Inicio</span> ` + 
                 (currentPath === '/' ? '' : currentPath);
 
             const ul = document.getElementById('fileList');

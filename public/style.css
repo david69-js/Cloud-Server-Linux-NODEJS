@@ -1,14 +1,14 @@
 :root {
-    --bg-color: #f0f2f5;
+    --bg-color: #f8fafc;
     --panel-bg: #ffffff;
-    --text-main: #333333;
-    --text-muted: #666666;
-    --border-color: #cccccc;
-    --primary: #4caf50;
-    --primary-hover: #388e3c;
-    --error: #f44336;
-    --error-hover: #d32f2f;
-    --warning: #ff9800;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --primary: #10b981;     /* Emerald Green */
+    --primary-hover: #059669;
+    --error: #ef4444;
+    --error-hover: #dc2626;
+    --warning: #f59e0b;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
